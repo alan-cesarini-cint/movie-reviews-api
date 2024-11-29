@@ -18,3 +18,4 @@ Each time the app runs it will try to create 3 tables in the DynamoDb instance:
 - Movies
 - Reviews
 It will also add 2 users: a regular user and an admin. The credentials for each user can be found in the class DynamoDbInitializer.
+Once the app is running you can find all the endpoint in http://localhost:5080/swagger/index.html
