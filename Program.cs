@@ -1,13 +1,14 @@
 using System.Text;
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.Runtime;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Movies.Api;
+using Movies.Api.Middleware;
 using Movies.Api.Repositories;
 using Movies.Api.Utils;
 using Newtonsoft.Json;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,10 +24,12 @@ var json = File.ReadAllText(credentialsFilePath);
 var credentials = JsonConvert.DeserializeObject<AwsCredentials>(json);
 
 builder.Services.AddSingleton<IAmazonDynamoDB>(new AmazonDynamoDBClient(
-    new BasicAWSCredentials(credentials.AwsAccessKeyId,credentials.AwsSecretAccessKey), // Add your AWS credentials
+    new BasicAWSCredentials(credentials.AwsAccessKeyId, credentials.AwsSecretAccessKey), // Add your AWS credentials
     new AmazonDynamoDBConfig
     {
-        ServiceURL = "https://dynamodb." + credentials.Region + ".amazonaws.com" // Optional for explicitly pointing to the service URL
+        ServiceURL =
+            "https://dynamodb." + credentials.Region +
+            ".amazonaws.com" // Optional for explicitly pointing to the service URL
     }
 ));
 
@@ -60,7 +63,20 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("UserPolicy", policy => policy.RequireRole("User", "Admin"));
 });
 
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
+
+// Add Serilog as the logging provider
+builder.Host.UseSerilog();
+
 var app = builder.Build();
+
+// Log HTTP requests
+app.UseSerilogRequestLogging();
 
 // Call DynamoDbInitializer
 using (var scope = app.Services.CreateScope())
@@ -75,6 +91,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Register middleware to handle errors (with Serilog)
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

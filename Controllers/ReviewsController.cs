@@ -9,15 +9,18 @@ namespace Movies.Api.Controllers;
 [Route("api/[controller]")]
 public class ReviewsController : ControllerBase
 {
-    private readonly IReviewRepository _reviewRepository;
+    private readonly ILogger _logger;
     private readonly IMovieRepository _movieRepository;
+    private readonly IReviewRepository _reviewRepository;
     private readonly IUserRepository _userRepository;
 
-    public ReviewsController(IReviewRepository reviewRepository, IMovieRepository movieRepository, IUserRepository userRepository)
+    public ReviewsController(IReviewRepository reviewRepository, IMovieRepository movieRepository,
+        IUserRepository userRepository, ILogger<ReviewsController> logger)
     {
         _reviewRepository = reviewRepository;
         _movieRepository = movieRepository;
         _userRepository = userRepository;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -32,16 +35,24 @@ public class ReviewsController : ControllerBase
     public IActionResult GetReviewsByMovieId(string id)
     {
         var reviews = _reviewRepository.GetReviewsByMovieIdAsync(id).Result;
-        if (!reviews.Any()) return NotFound();
+        if (!reviews.Any())
+        {
+            _logger.LogError("Reviews for movie ID {Id} not found.", id);
+            return NotFound();
+        }
 
         return Ok(reviews);
     }
-    
+
     [HttpGet("by_user/{id}")]
     public IActionResult GetReviewsByUserId(string id)
     {
         var reviews = _reviewRepository.GetReviewsByUserIdAsync(id).Result;
-        if (!reviews.Any()) return NotFound();
+        if (!reviews.Any())
+        {
+            _logger.LogError("Reviews for user ID {Id} not found.", id);
+            return NotFound();
+        }
 
         return Ok(reviews);
     }
@@ -50,7 +61,11 @@ public class ReviewsController : ControllerBase
     public IActionResult GetReviewById(string id)
     {
         var review = _reviewRepository.GetReviewAsync(id).Result;
-        if (review == null) return NotFound();
+        if (review == null)
+        {
+            _logger.LogError("Review with ID {Id} not found.", id);
+            return NotFound();
+        }
 
         return Ok(review);
     }
@@ -59,14 +74,12 @@ public class ReviewsController : ControllerBase
     [Authorize(Policy = "UserPolicy")]
     public IActionResult AddReview([FromBody] Review newReview)
     {
-        Console.WriteLine("MOVIE ID: " + newReview.MovieId);
-        Console.WriteLine("USER ID: " + newReview.UserId);
         var movie = _movieRepository.GetMovieAsync(newReview.MovieId).Result;
         if (movie == null) return BadRequest();
-        
+
         var user = _userRepository.GetUserAsync(newReview.UserId).Result;
         if (user == null) return BadRequest();
-        
+
         /*newReview.Id = Guid.NewGuid().ToString();
         _reviewRepository.AddReviewAsync(newReview).Wait();*/
 
