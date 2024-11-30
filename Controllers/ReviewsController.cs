@@ -31,32 +31,6 @@ public class ReviewsController : ControllerBase
         return Ok(reviews);
     }
 
-    [HttpGet("by_movie/{id}")]
-    public IActionResult GetReviewsByMovieId(string id)
-    {
-        var reviews = _reviewRepository.GetReviewsByMovieIdAsync(id).Result;
-        if (!reviews.Any())
-        {
-            _logger.LogError("Reviews for movie ID {Id} not found.", id);
-            return NotFound();
-        }
-
-        return Ok(reviews);
-    }
-
-    [HttpGet("by_user/{id}")]
-    public IActionResult GetReviewsByUserId(string id)
-    {
-        var reviews = _reviewRepository.GetReviewsByUserIdAsync(id).Result;
-        if (!reviews.Any())
-        {
-            _logger.LogError("Reviews for user ID {Id} not found.", id);
-            return NotFound();
-        }
-
-        return Ok(reviews);
-    }
-
     [HttpGet("{id}")]
     public IActionResult GetReviewById(string id)
     {

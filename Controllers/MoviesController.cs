@@ -11,10 +11,13 @@ public class MoviesController : ControllerBase
 {
     private readonly ILogger _logger;
     private readonly IMovieRepository _movieRepository;
+    private readonly IReviewRepository _reviewRepository;
 
-    public MoviesController(IMovieRepository movieRepository, ILogger<MoviesController> logger)
+    public MoviesController(IMovieRepository movieRepository, IReviewRepository reviewRepository,
+        ILogger<MoviesController> logger)
     {
         _movieRepository = movieRepository;
+        _reviewRepository = reviewRepository;
         _logger = logger;
     }
 
@@ -71,6 +74,20 @@ public class MoviesController : ControllerBase
         _movieRepository.DeleteMovieAsync(id).Wait();
 
         return NoContent();
+    }
+
+    [HttpGet("{id}/reviews")]
+    public IActionResult GetReviewsByMovieId(string id)
+    {
+        var reviews = _reviewRepository.GetReviewsByMovieIdAsync(id).Result;
+
+        if (!reviews.Any())
+        {
+            _logger.LogError("No Reviews found for movie id: {id}", id);
+            return NotFound();
+        }
+
+        return Ok(reviews);
     }
 
     private IActionResult GetMovieOrNotFound(string id, out Movie? movie)
