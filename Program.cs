@@ -1,12 +1,14 @@
 using System.Text;
 using Amazon.DynamoDBv2;
 using Amazon.Runtime;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Movies.Api;
 using Movies.Api.Middleware;
 using Movies.Api.Repositories;
 using Movies.Api.Utils;
+using Movies.Api.Validators;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -18,6 +20,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddAWSService<IAmazonDynamoDB>();
+
+// Register the movie validator
+builder.Services.AddControllers()
+    .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<MovieValidator>());
+
+// Register the review validator
+builder.Services.AddControllers()
+    .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<ReviewValidator>());
 
 var credentialsFilePath = "aws_credentials.json";
 var json = File.ReadAllText(credentialsFilePath);

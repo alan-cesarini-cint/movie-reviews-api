@@ -54,8 +54,8 @@ public class ReviewsController : ControllerBase
         var user = _userRepository.GetUserAsync(newReview.UserId).Result;
         if (user == null) return BadRequest();
 
-        /*newReview.Id = Guid.NewGuid().ToString();
-        _reviewRepository.AddReviewAsync(newReview).Wait();*/
+        newReview.Id = Guid.NewGuid().ToString();
+        _reviewRepository.AddReviewAsync(newReview).Wait();
 
         return CreatedAtAction(nameof(GetReviewById), new { id = newReview.Id }, newReview);
     }
