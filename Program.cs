@@ -1,15 +1,14 @@
 using System.Text;
+using Amazon;
 using Amazon.DynamoDBv2;
-using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Movies.Api;
 using Movies.Api.Middleware;
 using Movies.Api.Repositories;
-using Movies.Api.Utils;
 using Movies.Api.Validators;
-using Newtonsoft.Json;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,19 +28,17 @@ builder.Services.AddControllers()
 builder.Services.AddControllers()
     .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<ReviewValidator>());
 
-var credentialsFilePath = "aws_credentials.json";
-var json = File.ReadAllText(credentialsFilePath);
-var credentials = JsonConvert.DeserializeObject<AwsCredentials>(json);
-
-builder.Services.AddSingleton<IAmazonDynamoDB>(new AmazonDynamoDBClient(
-    new BasicAWSCredentials(credentials.AwsAccessKeyId, credentials.AwsSecretAccessKey), // Add your AWS credentials
-    new AmazonDynamoDBConfig
+// Load AWS credentials
+var sharedFile = new SharedCredentialsFile();
+if (sharedFile.TryGetProfile("personal", out var profile))
+{
+    var credentials = profile.GetAWSCredentials(sharedFile);
+    var dbConfig = new AmazonDynamoDBConfig
     {
-        ServiceURL =
-            "https://dynamodb." + credentials.Region +
-            ".amazonaws.com" // Optional for explicitly pointing to the service URL
-    }
-));
+        RegionEndpoint = RegionEndpoint.GetBySystemName(profile.Region.SystemName)
+    };
+    builder.Services.AddSingleton<IAmazonDynamoDB>(new AmazonDynamoDBClient(credentials, dbConfig));
+}
 
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
