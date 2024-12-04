@@ -1,74 +1,22 @@
-using System.Text;
-using Amazon;
-using Amazon.DynamoDBv2;
-using Amazon.Runtime.CredentialManagement;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Movies.Api;
+using Movies.Api.Extensions;
 using Movies.Api.Middleware;
-using Movies.Api.Repositories;
-using Movies.Api.Validators;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add services to the container
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
-builder.Services.AddAWSService<IAmazonDynamoDB>();
-
-// Register the movie validator
-builder.Services.AddControllers()
-    .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<MovieValidator>());
-
-// Register the review validator
-builder.Services.AddControllers()
-    .AddFluentValidation(config => config.RegisterValidatorsFromAssemblyContaining<ReviewValidator>());
-
-// Load AWS credentials
-var sharedFile = new SharedCredentialsFile();
-if (sharedFile.TryGetProfile("personal", out var profile))
-{
-    var credentials = profile.GetAWSCredentials(sharedFile);
-    var dbConfig = new AmazonDynamoDBConfig
-    {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(profile.Region.SystemName)
-    };
-    builder.Services.AddSingleton<IAmazonDynamoDB>(new AmazonDynamoDBClient(credentials, dbConfig));
-}
-
-builder.Services.AddTransient<IUserRepository, UserRepository>();
-builder.Services.AddTransient<IMovieRepository, MovieRepository>();
-builder.Services.AddTransient<IReviewRepository, ReviewRepository>();
+builder.Services.AddValidators();
+builder.Services.AddRepositoryServices(builder.Configuration);
+builder.Services.AddAwsServices();
+builder.Services.AddJwtAuthentication("YourSuperSecretKeyMustBe32BytesLong");
+builder.Services.AddAuthorizationPolicies();
 
 // Register DynamoDbInitializer
 builder.Services.AddTransient<DynamoDbInitializer>();
-
-// JWT configuration - provided by ChatGPT
-var key = "YourSuperSecretKeyMustBe32BytesLong"; // Replace with a secure key
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = "yourapp.com",
-            ValidAudience = "yourapp.com",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
-        };
-    });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("UserPolicy", policy => policy.RequireRole("User", "Admin"));
-});
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
