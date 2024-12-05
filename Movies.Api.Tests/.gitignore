@@ -1,0 +1,57 @@
+# Ignore build output
+/bin/**/**
+/obj/**/**
+
+/# User-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows Installer patches
+*.patch
+
+# Ignore ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# User-specific files for Visual Studio for Mac
+.vscode/
+
+# JetBrains Rider
+.idea/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# ASP.NET temporary files
+/app_data/
+
+# Ignore log files
+*.log
+
+# Ignore web server files
+/web.config
+
+# Ignore VS Code directory (for Visual Studio Code users)
+.vscode/
+
+# Ignore .NET Core tools directory
+/.dotnet/
+
+# Ignore ASP.NET Core logs
+/Logs/
+
+/appsettings.json
+/appsettings.*.json
+
+# Project-specific files
+*.vspscc
